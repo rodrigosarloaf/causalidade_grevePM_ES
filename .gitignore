@@ -1,0 +1,12 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+*.rar
+*.dbc
+*.DBC
+*.DBF
+*.dbf
+*.csv
+*.pdf
+*.zip
