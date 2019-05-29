@@ -75,6 +75,10 @@ Aqui, adiciono dados de projeções de população para o ano de 2017 (ano da Gr
 elaborados peo IBGE em 2018. A ideia é de uma possível análise posterior do efeito
 sobre a taxa de homicídios.
 
+#### testes_estac.R
+Neste arquivo, realizo o Testes ADF para raiz unitária - precisamos determinar
+com qual "forma" da série vamos trabalhar.
+
 ---
 
 ## Sugestões
