@@ -236,9 +236,21 @@ $(document).ready(function () {
 <p>Neste script, agrego os dados de homicídios e indicadores sociais por UF.</p>
 <p>Sobre a agregação de indicadores sociais por UF: existem dados já disponíveis do próprio IBGE neste nível, mas não para todos os indicadores e alguns estão organizados de uma forma um pouco diferente. Exemplo: dados somam 100% em cada classificação de tipo de domicílio (único responável, mais de um responsável…) e não entre todos os tipos possíveis de domicílios, como optei por organizar.</p>
 </div>
-<div id="adciona_dados_popuf.r" class="section level4">
-<h4>adciona_dados_popUF.R</h4>
+<div id="adiciona_dados_popuf.r" class="section level4">
+<h4>adiciona_dados_popUF.R</h4>
 <p>Aqui, adiciono dados de projeções de população para o ano de 2017 (ano da Greve) elaborados peo IBGE em 2018. A ideia é de uma possível análise posterior do efeito sobre a taxa de homicídios.</p>
+</div>
+<div id="testes_estac.r" class="section level4">
+<h4>testes_estac.R</h4>
+<p>Neste arquivo, realizo o Testes ADF para raiz unitária - precisamos determinar com qual “forma” da série vamos trabalhar.</p>
+</div>
+</div>
+<div id="modelagem" class="section level3">
+<h3>Modelagem/</h3>
+<p>Aqui, já começo a modelagem do contrafactual para o período da greve.</p>
+<div id="selec_janela_fit.r" class="section level4">
+<h4>selec_janela_fit.R</h4>
+<p>Para cada método (ArCo via Lasso ou via RadomForest e Controle Sintético) estimo os modelos de contrafactual. No caso do Lasso, para selecionar qual período de fit in-sample que mais se aproximam de um efeito estimado igual a Zero para o ano de 2016 (sem tratamento). Para o caso do controle sintético, como os dados usados no fit não variam, isso já é o próprio modelo de contrafactual.</p>
 <hr />
 </div>
 </div>

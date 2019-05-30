@@ -70,20 +70,35 @@ de uma forma um pouco diferente. Exemplo: dados somam 100% em cada classificaç�
 de tipo de domicílio (único responável, mais de um responsável...) e não entre 
 todos os tipos possíveis de domicílios, como optei por organizar.
 
-#### adciona_dados_popUF.R
+
+#### adiciona_dados_popUF.R
 Aqui, adiciono dados de projeções de população para o ano de 2017 (ano da Greve)
 elaborados peo IBGE em 2018. A ideia é de uma possível análise posterior do efeito
 sobre a taxa de homicídios.
+
 
 #### testes_estac.R
 Neste arquivo, realizo o Testes ADF para raiz unitária - precisamos determinar
 com qual "forma" da série vamos trabalhar.
 
+
+### Modelagem/
+Aqui, já começo a modelagem do contrafactual para o período da greve.
+
+
+#### selec_janela_fit.R
+Para cada método (ArCo via Lasso ou via RadomForest e Controle Sintético) estimo os modelos
+de contrafactual. No caso do Lasso, para selecionar qual período de fit in-sample que
+mais se aproximam de um efeito estimado igual a Zero para o ano de 2016 (sem tratamento).
+Para o caso do controle sintético, como os dados usados no fit não variam, isso já é o
+próprio modelo de contrafactual.
+
+
 ---
 
 ## Sugestões
 Quaisquer sugestões, seja sobre a utilização do GitHub, organização das pastas
-ou sobre os scripts do R serão muito bem-vindos.
+ou sobre os scripts do R, serão muito bem-vindos.
 
 
 Essa é a minha primeira experiência com Git e compartilhamento dos códigos.
