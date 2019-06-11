@@ -33,7 +33,7 @@ estados<-unique(homicidios_UF$UF)
 lista_import<-list()
 
 for(i  in 1:length(estados)){
-lista_import[[estados[i]]]<- read_excel("Analise Exploratoria/Dados Pop XLS/projecoes_2018_populacao_2010_2060.xls", 
+lista_import[[estados[i]]]<- read_excel("Tratamento dos Dados/Dados Pop XLS/projecoes_2018_populacao_2010_2060.xls", 
               sheet = estados[i], skip = 49, n_max = 2)
 
 }
@@ -55,7 +55,7 @@ for (i in 1:length(lista_import)) {
 df_pops<-df_pops[-1,]
 
 # Salvando
-saveRDS(df_pops, "Analise Exploratoria/data_frame_projecao_Pop_UF.rds")
+saveRDS(df_pops, "Tratamento dos Dados/data_frame_projecao_Pop_UF.rds")
 
 # Limpando
 rm(list = ls())

@@ -441,5 +441,5 @@ lista_censo_UF[["tab17"]]<-lista_censo$tab17 %>%
               Total_Pessoas10anos_naoLeemNemEscrevem = sum(Total_Pessoas10anos_naoLeemNemEscrevem))
 
 # Salvando
-saveRDS(lista_censo_UF, "Analise Exploratoria/lista_censo_por_UF.rds")
+saveRDS(lista_censo_UF, "Analise Exploratoria/lista_censo_por_UF_ANTIGO.rds")
 

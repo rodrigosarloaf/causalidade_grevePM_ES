@@ -854,7 +854,7 @@ lista_tabelas_censo<-list()
         lista_tabelas_censo[[nomes_tabs[i]]]<-get(nomes_tabs[i])
         }    
         
-    saveRDS(lista_tabelas_censo, file = "Tratamento dos Dados/lista_tabelas_censo.rds")
+    saveRDS(lista_tabelas_censo, file = "Tratamento dos Dados/lista_tabelas_censo_Municipios.rds")
 
     # Limpando meu environment
     rm(list = ls())
