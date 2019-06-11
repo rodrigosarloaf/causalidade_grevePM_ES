@@ -15,9 +15,13 @@ nomes_estados<-c("AC", "AL", "AP", "AM", "BA", "CE",
                  "MG", "PA", "PB", "PR", "PE", "PI",
                  "RJ", "RN", "RS", "RO", "RR", "SC",
                  "SP", "SE", "TO")
+    nomes_estados<-sort(nomes_estados)
 
 # Vamos criar DFs únicos com dados desde 2012 até 2017 para cada estado
-DOs_2017<-paste0("DOP", nomes_estados, "2017.dbc")
+DOs<-list.files("Tratamento dos Dados/Dados de DO DBC/")
+
+DOs_2017<-DOs[str_detect(DOs, "2017")]
+    DOs_2017<-sort(DOs_2017)    
 
 for(i in 1:length(nomes_estados)){
     df<-read.dbc(paste0("Tratamento dos Dados/Dados de DO DBC/", DOs_2017[i]))
@@ -48,6 +52,8 @@ for(i in 1:length(nomes_estados)){
     
     write.csv(df, file = paste0("Tratamento dos Dados/Dados de DO CSV/DOs_", nomes_estados[i],"12a17.csv"))
     
+    print(i)
+
 }
 
 # Agora, vamos separar somente os homicídios - com o que vamos trabalhar!
@@ -58,7 +64,7 @@ for(i in 1:length(nomes_estados)){
 df_obitos<-cbind.data.frame(NUMERODO = NA, DTOBITO = NA, CODMUNOCOR = NA, CIRCOBITO = NA,
                             CAUSABAS = NA, CAUSABAS_O = NA)
 
-csvs<-list.files("Tratamento dos Dados/Dados de DO CSV")
+csvs<-list.files("Tratamento dos Dados/Dados de DO CSV/")
     csvs<-paste0("Tratamento dos Dados/Dados de DO CSV/", csvs)    
 
 # Vamos pegar só essas informações de cada CSV criado
@@ -92,7 +98,8 @@ for (i in 1:length(csvs)) {
                                              DIFDATA = col_skip(), NUDIASOBCO = col_skip(), NUDIASOBIN = col_skip(), DTCADINV = col_skip(),
                                              TPOBITOCOR = col_skip(), DTCONINV = col_skip(), FONTES = col_skip(), TPRESGINFO = col_skip(),
                                              TPNIVELINV = col_skip(), NUDIASINF = col_skip(), DTCADINF = col_skip(), MORTEPARTO = col_skip(),
-                                             DTCONCASO = col_skip(), FONTESINF = col_skip(), ALTCAUSA = col_skip()))
+                                             DTCONCASO = col_skip(), FONTESINF = col_skip(), ALTCAUSA = col_skip()
+                                             ))
     
     
     
