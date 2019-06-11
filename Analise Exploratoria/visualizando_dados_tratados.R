@@ -218,16 +218,16 @@ rm(df_UF)
 # Censo ----
 
 # Importando dados
-lista_censo_UF<-readRDS("Analise Exploratoria/lista_censo_por_UF.rds")
+lista_censo_UF<-readRDS("Tratamento dos Dados/lista_censo_UF.rds")
 
 lista_histogram_indicadores<-list()
 
 
 for(i in 1:length(lista_censo_UF)){
-    lista_censo_UF[[i]]$Label<-ifelse(lista_censo_UF[[i]]$UF == "ES", "ES", "Outros Estados")
+    lista_censo_UF[[i]]$Label<-ifelse(lista_censo_UF[[i]]$UF == "Espírito Santo", "ES", "Outros Estados")
         
     for (j in 2:(ncol(lista_censo_UF[[i]])-1)){
-    df_aux<-cbind(lista_censo_UF[[i]][,j], lista_censo_UF[[i]]$Label)
+    df_aux<-cbind.data.frame(lista_censo_UF[[i]][,j], lista_censo_UF[[i]]$Label)
         colnames(df_aux)<-c("Dados", "Label")
         
     lista_histogram_indicadores[[paste0(names(lista_censo_UF)[i],
@@ -243,7 +243,7 @@ for(i in 1:length(lista_censo_UF)){
 for (i in 1:length(lista_histogram_indicadores)){
     print(lista_histogram_indicadores[[i]])
     
-    Sys.sleep(5)
+    Sys.sleep(2)
 }
 
 # Alguns aleatórios
