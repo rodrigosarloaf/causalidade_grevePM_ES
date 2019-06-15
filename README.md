@@ -109,6 +109,9 @@ próprio modelo de contrafactual.
 Mesma ideia do explicado acima, mas com valores em taxa de homicídios (por 100 mil
 habitantes).
 
+#### modelagem_greve.R
+Rodo e salvo os modelos "escolhidos" nos scripts acima.
+
 
 ---
 
