@@ -105,6 +105,11 @@ Para o caso do controle sintético, como os dados usados no fit não variam, iss
 próprio modelo de contrafactual.
 
 
+#### selec_janela_fit_emTaxa.R
+Mesma ideia do explicado acima, mas com valores em taxa de homicídios (por 100 mil
+habitantes).
+
+
 ---
 
 ## Sugestões
