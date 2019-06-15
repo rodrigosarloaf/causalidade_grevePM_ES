@@ -24,21 +24,35 @@ seu tratamento. Tentei torná-los autoexplicativos.
 
 ### Tratamento dos Dados/
 Nesta pasta, trato os dados brutos. A ideia inicial era trabalhar ao nível de municípios,
-porém, após a etapa de visualização dos dados, optei por trabalhar no nível UF - esses dados
-são agregados na outra pasta.
+porém, após a etapa de visualização dos dados, optei por trabalhar no nível UF - os dados de
+homicídios são agregados na outra pasta durante a visualização.
 
 
-#### lendo_dados_censo.R
+#### lendo_dados_censo_Municipios.R
 Neste script, importo todos os indicadores sociais municipais do censo de 2010. Devido à falta
 de padronização, optei por fazer uma importação separada para cada "sheet" do Excel.
+Devido à opção por trabalhar com dados ao nível de UF, abandonamos totalmente o uso dos indicadores ao
+nível municipal, optamos por baixar os dados estaduais do IBGE ou invés de agregar os municipais.
+
 
 #### lendo_dados_dbf.R
 Aqui, crio séries temporais de números de homicídios ao nível município/dia a partir
-dos dados do SIM-DataSUS
+dos dados do SIM-DataSUS, posteriormente agregados.
 
 
-Note que, na data de download, os dados de 2017 ainda estavam como "preliminares".
-Assim que os dados forem tratados como definitivos, irei alterar esses arquivos.
+#### adiciona_dados_popUF.R
+Aqui, adiciono dados de projeções de população para o ano de 2017 (ano da Greve)
+elaborados peo IBGE em 2018. A ideia é de uma possível análise posterior do efeito
+sobre a taxa de homicídios.
+
+
+#### baixando_tratando_dados_censoUF.R
+Uso a API do IBGE para requisitar os indicadores sociais ao nível de UF. Optei
+por mudar para esse formato para evitar possíveis erros cometidos por mim, ou escolhas
+ruins na forma de agregar.
+Neste script também faço o tratamento para o formato que optei por usar no Controle 
+Sintético.
+
 
 ### Analise Exploratoria/
 
@@ -56,11 +70,17 @@ Disponível em: <http://www.cookbook-r.com/Graphs/Multiple_graphs_on_one_page_(g
 Aqui, gero gráficos de homicídios e dos indicadores sociais usados.
 
 
-Durante essa análise, optei por agregar os dados por UF - próxima descrição - e 
-voltei para essa análise.
+Durante essa análise, optei por agregar os dados por UF e 
+voltei para essa análise. Também detectamos aqui alguumas séries (do controle) que
+devem ser retiradas por conter outliers - AM e RN, especificamente.
 
 
-#### agregando_por_UF.R
+#### testes_estac.R
+Neste arquivo, realizo o Testes ADF para raiz unitária - precisamos determinar
+se alguma série contém raiz unitária, o que (em geral) é um problema para os estimadores.
+
+
+#### agregando_por_UF_ANTIGO.R
 Neste script, agrego os dados de homicídios e indicadores sociais por UF.
 
 
@@ -69,17 +89,8 @@ próprio IBGE neste nível, mas não para todos os indicadores e alguns estão o
 de uma forma um pouco diferente. Exemplo: dados somam 100% em cada classificação
 de tipo de domicílio (único responável, mais de um responsável...) e não entre 
 todos os tipos possíveis de domicílios, como optei por organizar.
-
-
-#### adiciona_dados_popUF.R
-Aqui, adiciono dados de projeções de população para o ano de 2017 (ano da Greve)
-elaborados peo IBGE em 2018. A ideia é de uma possível análise posterior do efeito
-sobre a taxa de homicídios.
-
-
-#### testes_estac.R
-Neste arquivo, realizo o Testes ADF para raiz unitária - precisamos determinar
-com qual "forma" da série vamos trabalhar.
+Posteriormente, optei por mudar isso. Vou trabalhar com dados do próprio IBGE 
+explicados na pasta anterior.
 
 
 ### Modelagem/
