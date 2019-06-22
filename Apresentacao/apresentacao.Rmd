@@ -1,0 +1,386 @@
+---
+title: "Análise do Impacto da Greve da PM \\newline \\hspace{1cm} no Espírito Santo sobre os Homicídios"
+author: "Rodrigo Sarlo"
+date: "PUC-RIO \\newline \\hspace{0.5cm} 2019"
+output: 
+    beamer_presentation:
+        theme: "Boadilla"
+        colortheme: "seahorse"
+        fonttheme: "professionalfonts"
+        includes:
+            in_header: identacao.tex
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+
+# Carregando Pacotes
+library(tidyverse)
+library(magrittr)
+library(lubridate)
+library(ArCo)
+library(HDeconometrics)
+library(randomForest)
+library(Synth)
+library(knitr)
+library(kableExtra)
+library(maps)
+library(mapdata)
+library(ggmap)
+library(brazilmaps)
+library(maptools)
+```
+
+## Contexto
+
+* Greve da Polícia Militar do Espírito Santo entre 04/02/2017 e 24/02/2017 (21 dias de duração)
+    + Familiares dos PMs ocuparam as saídas dos Batalhões e das Companhias Independentes
+    + Reivindicações:
+        - Reajuste de salários - foram 4 anos sem reajustes com um período de IPCA acumulado em 29,28% entre 2013 e 2016
+        - Pagamento de auxílio-alimentação
+        - Adicionais de insalubridade, noturno e periculosidade
+    + Congelamento dos reajustes por parte do Governo do Estado - folha de pagamentos dos PMs havia crescido 46% desde 2010
+        - Recusa do Governo em negociar enquanto o policiamento não fosse reestabelecido
+
+    + Emenda Constitucional Nº 18, de 5 de Fevereiro e 1998 veda a possibilidade de organização sindical e greve por parte dos militares
+
+## Objetivo
+
+> Estimar o efeito impacto da Greve da PM na taxa de homicídios do Estado - Quanto da variação na taxa de homicídios é atribuível ao evento?
+
+* Estatísticas de homicídios são comumente reportadas em "número de homicídios/100 mil habitantes/ano". Este é o número que vamos reportar e analisar.
+
+## Dados Utilizados
+
+* SIM - DATASUS:
+
+
+Os dados de Homicídios são do Sistema de Informações de Mortalidade (SIM) reportados pelo SUS. Esses dados são retirados das declarações de óbito, preenchidos por médicos que fornecem, entre outras informações, o município e a causa da morte. 
+
+
+Uso somente os dados de homicídios, sem ser possível diferenciar entre culposo e doloso, e agrego ao nível Estado.
+
+```{r}
+
+df_homicidios<-readRDS("C:/Users/Rodrigo Sarlo/Desktop/causalidade_grevePM_ES/Analise Exploratoria/dataframe_homicidios_UF.rds")
+
+kable(head(df_homicidios, n = 2L), align = "c")
+
+```
+
+Os Estados do Amazonas e do Rio Grande do Norte foram excluídos devido à presença de Outliers.
+
+
+## Dados Utilizados
+
+* Projeção de População - IBGE:
+
+
+Os dados de população usados são projeções elaboradas pelo IBGE ao nível Estado. O arquivo contém projeções para os anos de 2010 (que no caso não é uma projeção, já que vem do Censo) até 2060, inclusive discriminando por faixa etária e sexo. Essas projeções foram feitas no ano de 2018.
+
+
+Utilizo somente os dados de projeção de população do ano de 2017 (ano da Greve).
+
+```{r, warning=FALSE, message=F}
+
+df_pop<-readRDS("C:/Users/Rodrigo Sarlo/Desktop/causalidade_grevePM_ES/Tratamento dos Dados/data_frame_projecao_Pop_UF.rds")
+row.names(df_pop)<-NULL
+
+kable(head(df_pop, n = 2L), align = "c", format.args = list(big.mark = ","))
+
+```
+
+## Dados Utilizados
+
+* Indicadores Sociais por Estado - Censo 2010:
+
+
+Os indicadores sociais estaduais são dos resultados da amostra do Censo de 2010. As tabelas baixadas são divididas nos seguites temas: domicílios, trabalho e rendimento, educação, migração e fecundidade.
+
+## Visualizando o Evento
+```{r}
+
+df_pop %<>% filter(UF != "AM" & UF != "RN")
+df_homicidios %<>% filter(UF != "AM" & UF != "RN")
+
+df_pop$Onde<-ifelse(df_pop$UF == "ES", "ES", "Outras UFs")
+df_homicidios$Onde<-ifelse(df_homicidios$UF == "ES", "ES", "Outras UFs")
+
+df_graf1<-df_homicidios %>% group_by(Onde, Data) %>%
+    summarise(Homicidios = sum(Homicidios)) %>%
+    filter(Data >= "2016-07-01" & Data <= "2017-06-30") %>%
+    ungroup()
+
+df_ajuda1<-df_pop %>% group_by(Onde) %>%
+    summarise(Populacao_proj_2017 = sum(Populacao_proj_2017))
+df_ajuda1$Pop_100mil<-df_ajuda1$Populacao_proj_2017/100000
+
+df_graf1 %<>% left_join(df_ajuda1, by = "Onde")
+
+df_graf1$Taxa_Homicidio<-df_graf1$Homicidios/df_graf1$Pop_100mil
+
+ggplot(df_graf1, aes(x = as.Date(Data), y = Taxa_Homicidio, col = factor(Onde))) +
+    geom_line() +
+    theme_minimal() +
+    theme(panel.grid = element_blank()) +
+    scale_color_manual(values = c("ES" = "red", "Outras UFs" = "black")) +
+    labs(x = "Datas", y = "Taxa de Homicídios", color = "Unidade",
+         title = "Comparação dos Homicídios - ES vs Outros Estados",
+         caption = "Período da Greve destacado em Azul") +
+    geom_vline(xintercept = ymd("2017-02-04"), col = "blue", linetype = "dashed") +
+    geom_vline(xintercept = ymd("2017-02-24"), col = "blue", linetype = "dashed")
+
+```
+
+## Visualizando o Evento
+* Séries temporais do número de homicídios/100 mil habitantes. Agreguei as outras UFs como forma de apresentar uma primeira ideia do evento. Note que o ES tem uma taxa média de homicídios (por dia) próxima da agregação dos outros estados e uma variância maior
+    + A série dos outros estados não conta com AM nem RN
+* No entanto não é essa a comparação final. Queremos criar um "Espírito Santo Contrafactual" - o que teria acontecido com o ES caso não houvesse greve e comparar com o que de fato observamos
+
+## Abordagem ArCo
+
+* A ideia básica é que, sob as hipóteses de identificação, ao estimarmos o mapeamento entre o grupo de tratados e o grupo de controle no período pré-intervenção, teremos um contrafactual válido para o período de tratamento
+* A partir de um modelo de fatores comuns, sob as hipóteses de que o grupos de controle não sofre tratamento e que os grupos são compatíveis, demonstra-se a normalidade assintótica do efeito médio de tratamento para um mapeamento genérico
+    + Também é possível discriminar o efeito por dia
+* O mapeamento escolhido para este caso foi o Random Forest
+
+## Abordagem ArCo
+
+```{r}
+
+lista_arco_final<-readRDS("C:/Users/Rodrigo Sarlo/Desktop/causalidade_grevePM_ES/Modelagem/lista_final_ArCo.rds")
+
+df_arco_pre<-cbind.data.frame(Datas = as.Date(lista_arco_final$Datas)[1:361],
+                              ES_observado = as.numeric(lista_arco_final$modelo_taxa$data$Variable1$ES)[1:361],
+                              ES_contrafac = as.numeric(lista_arco_final$modelo_taxa$fitted.values))
+
+ggplot(df_arco_pre, aes(x = Datas)) +
+    geom_line(aes(y = ES_observado, col = "ES Observado")) +
+    geom_line(aes(y = ES_contrafac, col = "ES Contrafactual"))+
+    scale_colour_manual(values = c("ES Observado" = "black",
+                                   "ES Contrafactual" = "blue")) +
+    theme_minimal() +
+    theme(panel.grid = element_blank()) +
+    labs(x = "Datas", y = "Taxa de Homicídios", color = "Tipo",
+         title = "Fit In-Sample Random Forest",
+         subtitle = "Período Pré-Intervenção",
+         caption = "Observe que o estimador capta a dinâmica temporal com precisão, \n embora não acompanhe perfeitamente os picos e os vales")
+
+```
+
+## Abordagem ArCo
+
+```{r}
+
+df_arco_efeito<-cbind.data.frame(Datas = as.Date(lista_arco_final$Datas)[341:382],
+                              ES_observado = as.numeric(lista_arco_final$modelo_taxa$data$Variable1$ES)[341:382],
+                              ES_contrafac = c(as.numeric(lista_arco_final$modelo_taxa$fitted.values)[341:361],
+                                               as.numeric(lista_arco_final$modelo_taxa$cf)))
+
+ggplot(df_arco_efeito, aes(x = Datas)) +
+    geom_line(aes(y = ES_observado, col = "ES Observado")) +
+    geom_line(aes(y = ES_contrafac, col = "ES Contrafactual"))+
+    scale_colour_manual(values = c("ES Observado" = "black",
+                                   "ES Contrafactual" = "blue")) +
+    theme_minimal() +
+    theme(panel.grid = element_blank()) +
+    geom_vline(xintercept = ymd("2017-02-03"), col = "grey",
+               linetype = "dashed") +
+    labs(x = "Datas", y = "Taxa de Homicídios", color = "Tipo",
+         title = "Efeito da Greve - Contrafactual via ArCo",
+         caption = "Linha vertical separa períodos Pré-Intervenção e Intervenção")
+
+# lista_arco_final$modelo_taxa$delta
+# lista_arco_final$modelo_taxa$p.value
+
+```
+
+## Abordagem ArCo
+* O estimador do efeito médio de tratamento é definido da seguinte forma:
+
+$$
+\hat{\Delta_{T}}=\frac{1}{T-T_{0}+1}\sum_{t=T_{0}}^T\hat{\delta_{t}}
+$$
+Onde: $\hat{\delta_{t}}=y_{t}-\hat{y}^{ArCo}_{t}$ e $t=T_{0},\cdots,T$ é o período de intervenção.
+
+
+* Os resultados encontrados foram $\hat{\Delta_{T}}=0.1518$. Com p-valor de $0.000695$ (para H0: $\hat{\Delta_{T}}=0$).
+
+
+## Abordagem Controle Sintético
+* A ideia aqui é que, ao construirmos a combinação convexa do grupo de controle que mais se aproxime do grupo tratado em todas as características observáveis correlacionadas com a variável de resposta do tratamento, podemos contruir um contrafactual para o grupo tratado utilizando as variáveis de resposta dos controles no período de intervenção
+* Partindo também de um modelo de fatores comuns, sob as hipóteses de que o tratamento não é informativo sobre os choques idiossincráticos e que os choques tem efeitos transitórios, é possível construir um estimador para o contrafactual a partir de possíveis preditores da variável de resposta. Testes de hipótese a respeito do efeito médio de tratamento são feitos por reamostragem
+    + As características selecionadas foram os indicadores sociais estaduais do Censo de 2010
+
+## Abordagem Controle Sintético
+```{r, message=FALSE, warning=FALSE}
+
+lista_synth_final<-readRDS("C:/Users/Rodrigo Sarlo/Desktop/causalidade_grevePM_ES/Modelagem/lista_final_Synth.rds")
+
+tabelas_taxa<-synth.tab(dataprep.res = lista_synth_final$data.prep_taxa, 
+                         synth.res = lista_synth_final$modelo_taxa)
+
+estados_pesos<-tabelas_taxa$tab.w
+estados_pesos %<>% select(-unit.numbers)
+colnames(estados_pesos)<-c("Pesos", "Nome")
+rownames(estados_pesos)<-NULL
+#estados_pesos<-rbind.data.frame(estados_pesos, cbind.data.frame(Pesos = c(NA,NA), Nome = c("AM", "RN")))
+estados_pesos$Nome<-as.character(estados_pesos$Nome)
+
+estados_pesos$Nome[estados_pesos$Nome == "AC"]<-str_to_upper("Acre")
+estados_pesos$Nome[estados_pesos$Nome == "AL"]<-str_to_upper("Alagoas")
+estados_pesos$Nome[estados_pesos$Nome == "AP"]<-str_to_upper("Amapá")
+estados_pesos$Nome[estados_pesos$Nome == "AM"]<-str_to_upper("Amazonas")
+estados_pesos$Nome[estados_pesos$Nome == "BA"]<-str_to_upper("Bahia")
+estados_pesos$Nome[estados_pesos$Nome == "CE"]<-str_to_upper("Ceará")
+estados_pesos$Nome[estados_pesos$Nome == "DF"]<-str_to_upper("Distrito Federal")
+estados_pesos$Nome[estados_pesos$Nome == "ES"]<-str_to_upper("Espírito Santo")
+estados_pesos$Nome[estados_pesos$Nome == "GO"]<-str_to_upper("Goiás")
+estados_pesos$Nome[estados_pesos$Nome == "MA"]<-str_to_upper("Maranhão")
+estados_pesos$Nome[estados_pesos$Nome == "MT"]<-str_to_upper("Mato Grosso")
+estados_pesos$Nome[estados_pesos$Nome == "MS"]<-str_to_upper("Mato Grosso do Sul")
+estados_pesos$Nome[estados_pesos$Nome == "MG"]<-str_to_upper("Minas Gerais")
+estados_pesos$Nome[estados_pesos$Nome == "PA"]<-str_to_upper("Pará")
+estados_pesos$Nome[estados_pesos$Nome == "PB"]<-str_to_upper("Paraíba")
+estados_pesos$Nome[estados_pesos$Nome == "PR"]<-str_to_upper("Paraná")
+estados_pesos$Nome[estados_pesos$Nome == "PE"]<-str_to_upper("Pernambuco")
+estados_pesos$Nome[estados_pesos$Nome == "PI"]<-str_to_upper("Piauí")
+estados_pesos$Nome[estados_pesos$Nome == "RJ"]<-str_to_upper("Rio de Janeiro")
+estados_pesos$Nome[estados_pesos$Nome == "RN"]<-str_to_upper("Rio Grande do Norte")
+estados_pesos$Nome[estados_pesos$Nome == "RS"]<-str_to_upper("Rio Grande do Sul")
+estados_pesos$Nome[estados_pesos$Nome == "RO"]<-str_to_upper("Rondônia")
+estados_pesos$Nome[estados_pesos$Nome == "RR"]<-str_to_upper("Roraima")
+estados_pesos$Nome[estados_pesos$Nome == "SC"]<-str_to_upper("Santa Catarina")
+estados_pesos$Nome[estados_pesos$Nome == "SP"]<-str_to_upper("São Paulo")
+estados_pesos$Nome[estados_pesos$Nome == "SE"]<-str_to_upper("Sergipe")
+estados_pesos$Nome[estados_pesos$Nome == "TO"]<-str_to_upper("Tocantins")
+
+brasil<-get_brmap(geo = "State", geo.filter = list(Region = 1:5))
+plot_brmap(brasil, data_to_join = estados_pesos, join_by = c("nome" = "Nome"),
+           var = "Pesos") +
+    labs(title = "Pesos encontrados no Contrle Sintético",
+         caption = "ES é o Tratado \n AM e RN estão de fora por conterem outliers") +
+    scale_fill_gradient(low = "#c6dbef", high = "#08306b", na.value = "black")
+
+```
+
+## Abordagem Controle Sintético
+A tabela a seguir exibe os valores de alguns dos indicadores sociais em cada grupo:
+
+```{r, message=FALSE, warning=FALSE}
+
+tab_pred<-tabelas_taxa$tab.pred
+colnames(tab_pred)<-c("ES", "ES Contrafactual",
+                      "Média Amostral")
+variaveis<-row.names(tab_pred)
+row.names(tab_pred)<-NULL
+tab_pred<-as.data.frame(tab_pred)
+tab_pred$Indicadores<-variaveis
+
+tab_pred %<>% select(Indicadores, ES, `ES Contrafactual`)
+tab_pred %<>% filter(Indicadores == "Prop_Sem_ou_Fundam_Incomp" | Indicadores == "Prop_Fundam_Comp" |
+                     Indicadores == "Prop_Medio_Comp" | Indicadores == "Prop_Superior_Comp" |
+                     Indicadores == "Prop_Indeterminado" | Indicadores == "Prop_Domici_Com_AguaCanali" |
+                     Indicadores == "Prop_Domici_Sem_AguaCanali")
+
+tab_pred$Indicadores[tab_pred$Indicadores == "Prop_Sem_ou_Fundam_Incomp"]<-"Ensino Fundamental ou Incompleto"
+tab_pred$Indicadores[tab_pred$Indicadores == "Prop_Fundam_Comp"]<-"Ensino Fundamental"
+tab_pred$Indicadores[tab_pred$Indicadores == "Prop_Medio_Comp"]<-"Ensino Médio"
+tab_pred$Indicadores[tab_pred$Indicadores == "Prop_Superior_Comp"]<-"Ensino Superior"
+tab_pred$Indicadores[tab_pred$Indicadores == "Prop_Indeterminado"]<-"Ensino Indeterminado"
+tab_pred$Indicadores[tab_pred$Indicadores == "Prop_Domici_Com_AguaCanali"]<-"Domicílio com Água Canalizada"
+tab_pred$Indicadores[tab_pred$Indicadores == "Prop_Domici_Sem_AguaCanali"]<-"Domicílio sem Água Canalizada"
+
+tab_pred$ES<-as.character(paste0(tab_pred$ES*100, "%"))
+tab_pred$`ES Contrafactual`<-as.character(paste0(tab_pred$`ES Contrafactual`*100, "%"))
+
+kable(tab_pred)
+
+```
+
+## Abordagem Controle Sintético
+
+```{r}
+
+df_sc<-cbind.data.frame(Data = as.Date(sort(unique(lista_synth_final$Datas))[1462:1882]),
+                        ES = as.vector(lista_synth_final$data.prep_taxa$Y1plot),
+                        ES_contra = as.vector(lista_synth_final$data.prep_taxa$Y0plot %*% lista_synth_final$modelo_taxa$solution.w))
+
+df_sc_pre<-df_sc %>% filter(Data <= ymd("2017-02-03"))
+
+ggplot(df_sc_pre, aes(x = Data)) +
+    geom_line(aes(y = ES, col = "ES Observado")) +
+    geom_line(aes(y = ES_contra, col = "ES Contrafactual")) +
+    scale_colour_manual(values = c("ES Observado" = "black",
+                                   "ES Contrafactual" = "red")) +
+    theme_minimal() +
+    theme(panel.grid = element_blank()) +
+    labs(x = "Datas", y = "Taxa de Homicídios", color = "Tipo",
+         title = "Fit In-Sample Controle Sintético",
+         subtitle = "Período Pré-Intervenção",
+         caption = "A estimativa acompanha a dinâmica, \n mas não tão bem quanto o ArCo. \n A média das séries parece a mesma")
+    
+```
+
+
+## Abordagem Controle Sintético
+
+```{r}
+
+df_sc_pos<-tail(df_sc, 42L)
+
+ggplot(df_sc_pos, aes(x = Data)) +
+    geom_line(aes(y = ES, col = "ES Observado")) +
+    geom_line(aes(y = ES_contra, col = "ES Contrafactual")) +
+    geom_vline(xintercept = ymd("2017-02-03"), col = "grey",
+               linetype = "dashed") +
+    scale_colour_manual(values = c("ES Observado" = "black",
+                                   "ES Contrafactual" = "red")) +
+    theme_minimal() +
+    theme(panel.grid = element_blank()) +
+    labs(x = "Datas", y = "Taxa de Homicídios", color = "Tipo",
+         title = "Efeito da Greve - Contrafactual via Controle Sintético",
+         caption = "Linha vertical separa períodos Pré-Intervenção e Intervenção")
+
+df_sc$dif<-(df_sc$ES-df_sc$ES_contra)
+
+# mean(tail(df_sc$dif, 21L))
+
+```
+
+## Abordagem Controle Sintético
+* O estimador do efeito médio de tratamento é definido da seguinte forma:
+
+$$
+\hat{\alpha_{T}} = \frac{1}{T-T_{0}+1}\sum_{t=T_{0}}^T(y_{t, Tratado} - \sum_{j = 1}^J \hat{w_{j}}y_{t,j})
+$$
+Onde: $\hat{w_{j}}$ é o peso de cada estado no grupo de controle e $t=T_{0},\cdots,T$ é o período de intervenção
+
+* O resultado encontrado foi $\hat{\alpha_{T}} = 0.1475$
+    + O fit do ArCo é bem melhor do que o do Controle Sintético pela própria natureza da função objetivo. Apesar disso, os resultados encontrados forma bem parecidos
+
+## Análise dos Efeitos Médios de Tratamento
+* Mas o que os números encontrados representam?
+* O que medimos foi a variação média na taxa diária de homicídios, encontrando 0.1518 e 0.1475 para o ArCo e para o Controle Sintético respectivamente
+
+
+Para passarmos para o efeito em número de homicídios, precisamos multiplicar esses resultados pela população do ES em centenas de milhares (39.25341) para termos o número de homicídios médios por dia de greve e depois pela duração da greve, 
+duração da greve (21 dias) para termos o efeito do evento no número de homicídios 
+
+## Análise dos Efeitos Médios de Tratamento
+* ArCo:
+
+$$
+(0.1518 * 39.25341) * (21) = (5.9585) * (21) = 125.1285
+$$
+Ou seja, tivemos \textit{5.96 homicídios a mais por dia devido à greve}. No total, o efeito estimado foi de \textit{125 homicídios devido ao evento}.
+
+
+* Analogamente para o Controle Sintético, temos:
+
+$$
+(0.1475 * 39.25341) * (21) = (5.79) * (21) = 121.6
+$$
+
+\textit{5.79 homicídios a mais por dia e 121.6 homicídios a mais no total.}
+
