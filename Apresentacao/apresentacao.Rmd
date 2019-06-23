@@ -1,6 +1,6 @@
 ---
 title: "Análise do Impacto da Greve da PM \\newline \\hspace{1cm} no Espírito Santo sobre os Homicídios"
-author: "Rodrigo Sarlo"
+author: "Rodrigo Sarlo \\newline \\hspace{0.5cm} GitHub: rodrigosarloaf"
 date: "PUC-RIO \\newline \\hspace{0.5cm} 2019"
 output: 
     beamer_presentation:

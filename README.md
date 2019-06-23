@@ -113,6 +113,12 @@ habitantes).
 Rodo e salvo os modelos "escolhidos" nos scripts acima.
 
 
+### Apresentacao/
+Nesta pasta, uso os dados gerados em outros arquivos e uso como referência os pdfs presentes para preparar a apresentação final do trabalho e seus resultados.
+
+#### apresentacao.Rmd
+Arquivo que gera o beamer da apresentação.
+
 ---
 
 ## Sugestões
