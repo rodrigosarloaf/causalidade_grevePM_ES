@@ -208,7 +208,7 @@ Onde: $\hat{\delta_{t}}=y_{t}-\hat{y}^{ArCo}_{t}$ e $t=T_{0},\cdots,T$ é o per�
 
 
 ## Abordagem Controle Sintético
-* A ideia aqui é que, ao construirmos a combinação convexa do grupo de controle que mais se aproxime do grupo tratado em todas as características observáveis correlacionadas com a variável de resposta do tratamento, podemos contruir um contrafactual para o grupo tratado utilizando as variáveis de resposta dos controles no período de intervenção
+* A ideia aqui é que, ao construirmos a combinação convexa do grupo de controle que mais se aproxime do grupo tratado em todas as características observáveis correlacionadas com a variável de resposta do tratamento, podemos construir um contrafactual para o grupo tratado utilizando as variáveis de resposta dos controles no período de intervenção
 * Partindo também de um modelo de fatores comuns, sob as hipóteses de que o tratamento não é informativo sobre os choques idiossincráticos e que os choques tem efeitos transitórios, é possível construir um estimador para o contrafactual a partir de possíveis preditores da variável de resposta. Testes de hipótese a respeito do efeito médio de tratamento são feitos por reamostragem
     + As características selecionadas foram os indicadores sociais estaduais do Censo de 2010
 
