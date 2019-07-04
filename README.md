@@ -119,6 +119,10 @@ Nesta pasta, uso os dados gerados em outros arquivos e uso como referência os p
 #### apresentacao.Rmd
 Arquivo que gera o beamer da apresentação.
 
+#### apresentacao_INF2420.Rmd
+Arquivo que gera o beamer da apresentação a ser feita na aula. É uma versão simplificada do arquivo anterior.
+
+
 ---
 
 ## Sugestões
