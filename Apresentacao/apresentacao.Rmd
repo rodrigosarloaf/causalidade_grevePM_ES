@@ -36,7 +36,7 @@ library(maptools)
 * Greve da Polícia Militar do Espírito Santo entre 04/02/2017 e 24/02/2017 (21 dias de duração)
     + Familiares dos PMs ocuparam as saídas dos Batalhões e das Companhias Independentes
     + Reivindicações:
-        - Reajuste de salários - foram 4 anos sem reajustes com um período de IPCA acumulado em 29,28% entre 2013 e 2016
+        - Reajuste de salários - foram 4 anos sem reajustes em um período de IPCA acumulado em 29,28% entre 2013 e 2016
         - Pagamento de auxílio-alimentação
         - Adicionais de insalubridade, noturno e periculosidade
     + Congelamento dos reajustes por parte do Governo do Estado - folha de pagamentos dos PMs havia crescido 46% desde 2010
@@ -46,9 +46,9 @@ library(maptools)
 
 ## Objetivo
 
-> Estimar o efeito impacto da Greve da PM na taxa de homicídios do Estado - Quanto da variação na taxa de homicídios é atribuível ao evento?
+> Estimar o efeito impacto da Greve da PM na taxa de homicídios do Estado - Quanto da variação nos homicídios é atribuível ao evento?
 
-* Estatísticas de homicídios são comumente reportadas em "número de homicídios/100 mil habitantes/ano". Este é o número que vamos reportar e analisar.
+* Estatísticas de homicídios são comumente reportadas em "número de homicídios/100 mil habitantes/ano". Os modelos serão estimados em taxa de homicídios por dia, já que essa transformação trouxe melhores resultados em termos de fit.
 
 ## Dados Utilizados
 
@@ -58,7 +58,7 @@ library(maptools)
 Os dados de Homicídios são do Sistema de Informações de Mortalidade (SIM) reportados pelo SUS. Esses dados são retirados das declarações de óbito, preenchidos por médicos que fornecem, entre outras informações, o município e a causa da morte. 
 
 
-Uso somente os dados de homicídios, sem ser possível diferenciar entre culposo e doloso, e agrego ao nível Estado.
+Uso somente os dados de homicídios, sem ser possível diferenciar entre culposo e doloso, e agrego ao nível Estado/dia.
 
 ```{r}
 
@@ -68,7 +68,7 @@ kable(head(df_homicidios, n = 2L), align = "c")
 
 ```
 
-Os Estados do Amazonas e do Rio Grande do Norte foram excluídos devido à presença de Outliers.
+Os Estados do Amazonas e do Rio Grande do Norte foram excluídos devido à presença de Outliers in-sample. Isso causa uma potencial distorção no modelo estimado.
 
 
 ## Dados Utilizados
@@ -85,8 +85,9 @@ Utilizo somente os dados de projeção de população do ano de 2017 (ano da Gre
 
 df_pop<-readRDS("C:/Users/Rodrigo Sarlo/Desktop/causalidade_grevePM_ES/Tratamento dos Dados/data_frame_projecao_Pop_UF.rds")
 row.names(df_pop)<-NULL
+colnames(df_pop)<-c("UF", "População Projetada 2017")
 
-kable(head(df_pop, n = 2L), align = "c", format.args = list(big.mark = ","))
+kable(head(df_pop, n = 2L), align = "c", format.args = list(big.mark = "."))
 
 ```
 
@@ -112,8 +113,8 @@ df_graf1<-df_homicidios %>% group_by(Onde, Data) %>%
     ungroup()
 
 df_ajuda1<-df_pop %>% group_by(Onde) %>%
-    summarise(Populacao_proj_2017 = sum(Populacao_proj_2017))
-df_ajuda1$Pop_100mil<-df_ajuda1$Populacao_proj_2017/100000
+    summarise(`População Projetada 2017` = sum(`População Projetada 2017`))
+df_ajuda1$Pop_100mil<-df_ajuda1$`População Projetada 2017`/100000
 
 df_graf1 %<>% left_join(df_ajuda1, by = "Onde")
 
@@ -139,10 +140,10 @@ ggplot(df_graf1, aes(x = as.Date(Data), y = Taxa_Homicidio, col = factor(Onde)))
 
 ## Abordagem ArCo
 
-* A ideia básica é que, sob as hipóteses de identificação, ao estimarmos o mapeamento entre o grupo de tratados e o grupo de controle no período pré-intervenção, teremos um contrafactual válido para o período de tratamento
-* A partir de um modelo de fatores comuns, sob as hipóteses de que o grupos de controle não sofre tratamento e que os grupos são compatíveis, demonstra-se a normalidade assintótica do efeito médio de tratamento para um mapeamento genérico
+* A ideia básica é que, sob as hipóteses de identificação, estimando um modelo com o grupo de tratados como variável dependente no período pré-intervenção, teremos um contrafactual válido para o período de tratamento
+* A partir de um modelo de fatores comuns, sob as hipóteses de que o grupos de controle não sofre tratamento e que os grupos são compatíveis, demonstra-se a normalidade assintótica do efeito médio de tratamento para um modelo de previsão genérico
     + Também é possível discriminar o efeito por dia
-* O mapeamento escolhido para este caso foi o Random Forest
+* O modelo escolhido para este caso foi o Random Forest
 
 ## Abordagem ArCo
 
@@ -371,7 +372,7 @@ duração da greve (21 dias) para termos o efeito do evento no número de homic�
 * ArCo:
 
 $$
-(0.1518 * 39.25341) * (21) = (5.9585) * (21) = 125.1285
+(0.1518 * 39.25341) * (21) = (5.9585) * (21) = 125.13
 $$
 Ou seja, tivemos \textit{5.96 homicídios a mais por dia devido à greve}. No total, o efeito estimado foi de \textit{125 homicídios devido ao evento}.
 
@@ -382,5 +383,20 @@ $$
 (0.1475 * 39.25341) * (21) = (5.79) * (21) = 121.6
 $$
 
-\textit{5.79 homicídios a mais por dia e 121.6 homicídios a mais no total.}
+\textit{5.79 homicídios a mais por dia e 121 homicídios a mais no total.}
 
+## Análise dos Efeitos Médios de Tratamento
+Mas quantos homicídios seriam esperados nesse período? Esse número de 125 a mais estimados via ArCo representam uma variação percentual de quanto em relação ao que seria esperado?
+
+
+* A taxa média de homicídios estimada para o contrafactual do ES foi de 0.0932.
+
+$$
+(0.0932 * 39.25341) * (21) = (3.66) * (21) = 76.9
+$$
+
+
+* Ou seja, no período da greve seria de se esperar um total de 77 homicídios no Estado do Espírito Santo. No entanto, foram observados \textit{125 homicídios a mais}.
+
+
+* Portanto, observamos um aumento estimado de 62% no número de homicídios para o período.
