@@ -48,17 +48,15 @@ library(maptools)
 
 > Estimar o efeito impacto da Greve da PM nos homicídios do Estado - Quanto da variação nos homicídios é atribuível ao evento?
 
-* Estatísticas de homicídios são comumente reportadas em "número de homicídios/100 mil habitantes/ano". Os modelos serão estimados em taxa de homicídios por dia, já que essa transformação trouxe melhores resultados em termos de fit. O efeito da greve será analisado em nível por ser mais fácil de compreender.
-
 ## Dados Utilizados
 
 * SIM - DATASUS:
 
 
-Os dados de Homicídios são do Sistema de Informações de Mortalidade (SIM) reportados pelo SUS. Esses dados são retirados das declarações de óbito, preenchidos por médicos que fornecem, entre outras informações, o município e a causa da morte causa da morte (pela Classificação Internacional de Doenças - CID) e indicação se foi homicídio ou não. 
+Os dados de Homicídios são do Sistema de Informações de Mortalidade (SIM) reportados pelo SUS. Cada entrada corresponde a um óbito contendo município da ocorrência, causa da morte (pela Classificação Internacional de Doenças - CID), dia e indicação se foi homicídio ou não. 
 
 
-Uso somente os dados de homicídios, sem ser possível diferenciar entre culposo e doloso, e agrego ao nível Estado/dia.
+Utilizo o número de homicídios por Estado/Dia:
 
 ```{r}
 
@@ -70,7 +68,7 @@ kable(head(df_homicidios, n = 2L), align = "c")
 
 ```
 
-Os Estados do Amazonas e do Rio Grande do Norte foram excluídos devido à presença de Outliers in-sample. Isso causa uma potencial distorção no modelo estimado.
+Os Estados do Amazonas e do Rio Grande do Norte foram excluídos devido à presença de Outliers.
 
 
 ## Dados Utilizados
@@ -78,10 +76,10 @@ Os Estados do Amazonas e do Rio Grande do Norte foram excluídos devido à prese
 * Projeção de População - IBGE:
 
 
-Os dados de população usados são projeções elaboradas pelo IBGE ao nível Estado. O arquivo contém projeções para os anos de 2010 (que no caso não é uma projeção, já que vem do Censo) até 2060, inclusive discriminando por faixa etária e sexo. Essas projeções foram feitas no ano de 2018.
+Os dados de população usados são projeções elaboradas pelo IBGE ao nível Estado.
 
 
-Utilizo somente os dados de projeção de população do ano de 2017 (ano da Greve).
+Utilizo somente os dados de projeção de população do ano de 2017 (ano da Greve) para transformar os homicídios em taxa.
 
 ```{r, warning=FALSE, message=F}
 
@@ -92,6 +90,7 @@ colnames(df_pop)<-c("UF", "População Projetada 2017")
 kable(head(df_pop, n = 2L), align = "c", format.args = list(big.mark = "."))
 
 ```
+
 
 ## Dados Utilizados
 
@@ -131,7 +130,8 @@ ggplot(df_graf1, aes(x = as.Date(Data), y = Taxa_Homicidio, col = factor(Onde)))
     scale_color_manual(values = c("ES" = "red", "Outras UFs" = "black")) +
     labs(x = "Datas", y = "Taxa de Homicídios", color = "Unidade",
          title = "Comparação dos Homicídios - ES vs Outros Estados",
-         caption = "Período da Greve destacado em Azul") +
+         caption = "Período da Greve destacado em Azul \n
+         Outras UFs sem AM nem RN") +
     geom_vline(xintercept = ymd("2017-02-04"), col = "blue", linetype = "dashed") +
     geom_vline(xintercept = ymd("2017-02-24"), col = "blue", linetype = "dashed")
 
@@ -139,14 +139,23 @@ ggplot(df_graf1, aes(x = as.Date(Data), y = Taxa_Homicidio, col = factor(Onde)))
 
 ## Visualizando o Evento
 * Séries temporais do número de homicídios/100 mil habitantes. Agreguei as outras UFs como forma de apresentar uma primeira ideia do evento. Note que o ES tem uma taxa média de homicídios (por dia) próxima da agregação dos outros estados e uma variância maior
-    + A série dos outros estados não conta com AM nem RN
+
+
 * No entanto não é essa a comparação final. Queremos criar um "Espírito Santo Contrafactual" - o que teria acontecido com o ES caso não houvesse greve e comparar com o que de fato observamos
+
 
 ## Abordagem ArCo
 
-* A ideia básica é que, sob as hipóteses de identificação, estimando um modelo com o grupo de tratados como variável dependente no período pré-intervenção, teremos um contrafactual válido para o período de tratamento
-* A partir de um modelo de fatores comuns, sob as hipóteses de que o grupos de controle não sofre tratamento e que os grupos são compatíveis, demonstra-se a normalidade assintótica do efeito médio de tratamento para um modelo de previsão genérico
-    + Também é possível discriminar o efeito por dia
+* A partir de um modelo de fatores comuns para o processo gerador das séries analisadas nos grupos de controle e tratamento, demonstra-se que podemos usar um modelo de previsão genérico para estimar o efeito médio do tratamento
+    + É possível medir o efeito por dia, mas só podemos testar hipótese de que houve tratamento para a média
+
+
+* Hipóteses de identificação:
+
+1. Compatibilidade entre grupos
+2. Grupo de controle não sofre tratamento
+
+
 * O modelo escolhido para este caso foi o Random Forest
 
 ## Abordagem ArCo
@@ -211,11 +220,18 @@ Onde: $\hat{\delta_{t}}=y_{t}-\hat{y}^{ArCo}_{t}$ e $t=T_{0},\cdots,T$ é o per�
 
 * Os resultados encontrados foram $\hat{\Delta_{T}}=0.1518$. Com p-valor de $0.000695$ (para H0: $\hat{\Delta_{T}}=0$).
 
-
 ## Abordagem Controle Sintético
-* A ideia aqui é que, ao construirmos a combinação convexa do grupo de controle que mais se aproxime do grupo tratado em todas as características observáveis correlacionadas com a variável de resposta do tratamento, podemos construir um contrafactual para o grupo tratado utilizando as variáveis de resposta dos controles no período de intervenção
-* Partindo também de um modelo de fatores comuns, sob as hipóteses de que o tratamento não é informativo sobre os choques idiossincráticos e que os choques tem efeitos transitórios, é possível construir um estimador para o contrafactual a partir de possíveis preditores da variável de resposta. Testes de hipótese a respeito do efeito médio de tratamento são feitos por reamostragem
+* Também parte de um modelo de fatores comuns para estimar o efeito médio de tratamento. A diferença é que se usa características observáveis - possíveis preditores da variável analisada - para estimação do contrafactual.
     + As características selecionadas foram os indicadores sociais estaduais do Censo de 2010
+
+
+* A ideia é que construindo uma combinação convexa dos grupos de controle que mais se pareça com a unidade tratada nos preditores, podemos usar os mesmos pesos para construir um bom contrafactual para o grupo de controle na série estudada.
+
+
+* Hipóteses de identificação:
+
+1. Tratamento não correlacionado com os choques idiossincráticos
+2. Choque tem efeitos transitórios
 
 ## Abordagem Controle Sintético
 ```{r, message=FALSE, warning=FALSE}
@@ -363,7 +379,8 @@ Onde: $\hat{w_{j}}$ é o peso de cada estado no grupo de controle e $t=T_{0},\cd
 
 * O resultado encontrado foi $\hat{\alpha_{T}} = 0.1475$
     + O fit do ArCo é bem melhor do que o do Controle Sintético pela própria natureza da função objetivo. Apesar disso, os resultados encontrados forma bem parecidos
-
+    + Poderíamos fazer testes de hipótese para o efeito médio do tratamento por reamostragem
+    
 ## Análise dos Efeitos Médios de Tratamento
 * Mas o que os números encontrados representam?
 * O que medimos foi a variação média na taxa diária de homicídios, encontrando 0.1518 e 0.1475 para o ArCo e para o Controle Sintético respectivamente
@@ -399,7 +416,10 @@ $$
 (0.0932 * 39.25341) * (21) = (3.66) * (21) = 76.9
 $$
 
+
 * Ou seja, no período da greve seria de se esperar um total de 77 homicídios no Estado do Espírito Santo. No entanto, foram observados \textit{125 homicídios a mais}.
 
 
 * Portanto, observamos um aumento estimado de 62% no número de homicídios no para o período.
+
+    
